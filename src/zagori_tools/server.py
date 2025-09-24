@@ -16,7 +16,7 @@ load_dotenv()
 
 app = FastAPI(
     title="Zagori Tools",
-    version="0.2.1",
+    version="0.2.2",
     description="Tool server that proxies requests to the Notion API for ChatGPT.",
 )
 
@@ -170,8 +170,30 @@ def main() -> None:
     import uvicorn
 
     host = os.getenv("HOST", "0.0.0.0")
-    port = int(os.getenv("PORT", "8000"))
-    uvicorn.run("zagori_tools.server:app", host=host, port=port, reload=False)
+    port = int(os.getenv("PORT", "443"))
+
+    certfile = os.getenv("SSL_CERTFILE")
+    keyfile = os.getenv("SSL_KEYFILE")
+    ssl_kwargs: dict[str, Any] = {}
+
+    if certfile and keyfile:
+        ssl_kwargs["ssl_certfile"] = certfile
+        ssl_kwargs["ssl_keyfile"] = keyfile
+        key_password = os.getenv("SSL_KEYFILE_PASSWORD")
+        if key_password:
+            ssl_kwargs["ssl_keyfile_password"] = key_password
+    elif port == 443:
+        raise SystemExit(
+            "PORT is 443 but SSL_CERTFILE/SSL_KEYFILE are not configured; HTTPS requires both."
+        )
+
+    uvicorn.run(
+        "zagori_tools.server:app",
+        host=host,
+        port=port,
+        reload=False,
+        **ssl_kwargs,
+    )
 
 
 if __name__ == "__main__":

@@ -13,20 +13,26 @@ Proxy a Notion integration through a FastAPI server that ChatGPT can call as a s
    echo 'NOTION_API_TOKEN=secret_token_from_notion' > .env
    echo 'NOTION_API_VERSION=2022-06-28' >> .env  # optional override
    ```
-2. Install the project in editable mode:
+2. Point the server at your TLS certificate and key so it can listen on HTTPS 443:
+   ```bash
+   echo 'SSL_CERTFILE=/etc/letsencrypt/live/example.com/fullchain.pem' >> .env
+   echo 'SSL_KEYFILE=/etc/letsencrypt/live/example.com/privkey.pem' >> .env
+   # echo 'SSL_KEYFILE_PASSWORD=...' >> .env  # only if your key is encrypted
+   ```
+3. Install the project in editable mode:
    ```bash
    pip install -e .
    ```
-3. Run the development server (defaults to port 8000):
+4. Run the server (defaults to `0.0.0.0:443` with HTTPS enabled):
    ```bash
    zagori-tools
    ```
    or
    ```bash
-   uvicorn zagori_tools.server:app --host 0.0.0.0 --port 8000 --reload
+   uvicorn zagori_tools.server:app --host 0.0.0.0 --port 443 --ssl-certfile $SSL_CERTFILE --ssl-keyfile $SSL_KEYFILE
    ```
-4. Open the interactive docs at http://localhost:8000/docs.
-5. The manifest lives at http://localhost:8000/.well-known/ai-plugin.json.
+5. Open the interactive docs at https://<your-host>/docs.
+6. The manifest lives at https://<your-host>/.well-known/ai-plugin.json.
 
 ## Testing
 - Install the test extras once: `pip install -e .[test]`
