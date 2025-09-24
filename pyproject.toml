@@ -1,0 +1,22 @@
+[project]
+name = "zagori-tools"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.110.0,<0.112.0",
+    "uvicorn>=0.29.0,<0.31.0",
+]
+
+[project.scripts]
+zagori-tools = "zagori_tools.server:main"
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.2,<9.0",
+    "httpx>=0.27,<0.28",
+]
+
+[tool.uv]
+package = true
