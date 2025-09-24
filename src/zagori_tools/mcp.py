@@ -112,6 +112,7 @@ def main() -> None:
 
     from mcp.server.sse import SseServerTransport
     from starlette.applications import Starlette
+    from starlette.responses import Response
     from starlette.routing import Mount, Route
     import uvicorn
 
@@ -125,6 +126,8 @@ def main() -> None:
                 streams[1],
                 mcp_server._mcp_server.create_initialization_options(),  # type: ignore[attr-defined]
             )
+
+        return Response()
 
     starlette_app = Starlette(
         debug=settings.debug,
