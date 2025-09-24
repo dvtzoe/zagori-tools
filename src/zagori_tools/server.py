@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import os
+from functools import lru_cache
+from pathlib import Path
 from typing import Any, Literal
 
 import httpx
@@ -13,6 +16,28 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, validator
 
 load_dotenv()
+
+OPENAPI_JSON_PATH = Path(__file__).with_name("openapi.json")
+
+
+@lru_cache(maxsize=1)
+def _get_openapi_document() -> dict[str, Any]:
+    """Load the OpenAPI document stored alongside the server module."""
+
+    try:
+        raw = OPENAPI_JSON_PATH.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise HTTPException(
+            status_code=500, detail="openapi.json is missing; unable to serve the schema."
+        ) from exc
+
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(
+            status_code=500, detail="openapi.json is invalid JSON; unable to serve the schema."
+        ) from exc
+
 
 app = FastAPI(
     title="Zagori Tools",
@@ -40,7 +65,8 @@ class NotionProxyRequest(BaseModel):
 
     method: Literal["GET", "POST", "PATCH", "DELETE"]
     path: str = Field(
-        ..., description="Endpoint path, e.g. '/v1/pages' or 'v1/databases/{database_id}/query'."
+        ...,
+        description="Endpoint path, e.g. '/v1/pages' or 'v1/databases/{database_id}/query'.",
     )
     params: dict[str, Any] | None = Field(
         default=None, description="Optional query parameters appended to the request."
@@ -68,7 +94,8 @@ class NotionProxyResponse(BaseModel):
     status_code: int
     data: Any | None
     notion_request_id: str | None = Field(
-        default=None, description="Value of Notion's X-Request-Id header when available."
+        default=None,
+        description="Value of Notion's X-Request-Id header when available.",
     )
 
 
@@ -142,6 +169,15 @@ def proxy_notion_request(payload: NotionProxyRequest) -> NotionProxyResponse:
     )
 
 
+
+
+@app.get("/.well-known/openapi.json", include_in_schema=False)
+async def well_known_openapi() -> JSONResponse:
+    """Serve the static OpenAPI document for plugin registration."""
+
+    return JSONResponse(content=_get_openapi_document())
+
+
 @app.get("/.well-known/ai-plugin.json", include_in_schema=False)
 async def plugin_manifest(request: Request) -> JSONResponse:
     """Serve the manifest that ChatGPT Actions expect."""
@@ -157,9 +193,9 @@ async def plugin_manifest(request: Request) -> JSONResponse:
             " query params, and body."
         ),
         "auth": {"type": "none"},
-        "api": {"type": "openapi", "url": f"{base_url}/openapi.json"},
-        "contact_email": "support@example.com",
-        "legal_info_url": "https://example.com/legal",
+        "api": {"type": "openapi", "url": f"{base_url}/.well-known/openapi.json"},
+        "contact_email": "ohmtzoe@gmail.com",
+        "legal_info_url": "https://github.com/dvtz/zagori-tools/blob/main/README.md",
     }
     return JSONResponse(content=manifest)
 

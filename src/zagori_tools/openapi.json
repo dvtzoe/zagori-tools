@@ -1,0 +1,227 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Zagori Tools",
+    "description": "Tool server that proxies requests to the Notion API for ChatGPT.",
+    "version": "0.2.2"
+  },
+  "paths": {
+    "/healthz": {
+      "get": {
+        "tags": [
+          "internal"
+        ],
+        "summary": "Health Check",
+        "description": "Simple readiness probe for deployment environments.",
+        "operationId": "health_check_healthz_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notion/request": {
+      "post": {
+        "tags": [
+          "notion"
+        ],
+        "summary": "Proxy Notion Request",
+        "description": "Forward a request to Notion and return the raw response for ChatGPT to consume.",
+        "operationId": "proxy_notion_request_notion_request_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotionProxyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotionProxyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HTTPValidationError": {
+        "title": "HTTPValidationError",
+        "type": "object",
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            }
+          }
+        }
+      },
+      "HealthResponse": {
+        "title": "HealthResponse",
+        "description": "Response payload for the health check endpoint.",
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "title": "Status",
+            "type": "string",
+            "const": "ok"
+          }
+        }
+      },
+      "NotionProxyRequest": {
+        "title": "NotionProxyRequest",
+        "description": "Generic proxy request body for forwarding calls to the Notion API.",
+        "type": "object",
+        "required": [
+          "method",
+          "path"
+        ],
+        "properties": {
+          "method": {
+            "title": "Method",
+            "type": "string",
+            "enum": [
+              "GET",
+              "POST",
+              "PATCH",
+              "DELETE"
+            ]
+          },
+          "path": {
+            "title": "Path",
+            "description": "Endpoint path, e.g. '/v1/pages' or 'v1/databases/{database_id}/query'.",
+            "type": "string"
+          },
+          "params": {
+            "title": "Params",
+            "description": "Optional query parameters appended to the request.",
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": true
+              },
+              {
+                "type": null
+              }
+            ]
+          },
+          "body": {
+            "title": "Body",
+            "description": "Optional JSON body forwarded to Notion (ignored for GET requests).",
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": true
+              },
+              {
+                "type": null
+              }
+            ]
+          }
+        }
+      },
+      "NotionProxyResponse": {
+        "title": "NotionProxyResponse",
+        "description": "Standardised response surfaced back to ChatGPT.",
+        "type": "object",
+        "required": [
+          "status_code",
+          "data"
+        ],
+        "properties": {
+          "status_code": {
+            "title": "Status Code",
+            "type": "integer"
+          },
+          "data": {
+            "title": "Data",
+            "anyOf": [
+              {},
+              {
+                "type": null
+              }
+            ]
+          },
+          "notion_request_id": {
+            "title": "Notion Request Id",
+            "description": "Value of Notion's X-Request-Id header when available.",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": null
+              }
+            ]
+          }
+        }
+      },
+      "ValidationError": {
+        "title": "ValidationError",
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "properties": {
+          "loc": {
+            "title": "Location",
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            }
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
