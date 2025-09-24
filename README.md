@@ -1,19 +1,23 @@
 # Zagori Tools
 
-A tool server I vibe coded so that I can plug it into ChatGPT, and documented so I know how to use it.
+Proxy a Notion integration through a FastAPI server that ChatGPT can call as a single Action.
 
 ## Features
 - `GET /healthz` – readiness probe for deployment checks.
-- `GET /time` – returns the current UTC timestamp (extendable for other timezones).
-- `POST /math/sum` – sums a list of floating-point numbers.
-- `GET /.well-known/ai-plugin.json` – manifest that points ChatGPT to the generated OpenAPI spec.
+- `POST /notion/request` – forwards a method/path/body triple directly to the Notion REST API.
+- `GET /.well-known/ai-plugin.json` – manifest pointing ChatGPT at the generated OpenAPI schema.
 
 ## Getting Started
-1. Install the project in editable mode:
+1. Provide your Notion integration token via environment variable or a `.env` file (auto-loaded on startup):
+   ```bash
+   echo 'NOTION_API_TOKEN=secret_token_from_notion' > .env
+   echo 'NOTION_API_VERSION=2022-06-28' >> .env  # optional override
+   ```
+2. Install the project in editable mode:
    ```bash
    pip install -e .
    ```
-2. Run the development server (defaults to port 8000):
+3. Run the development server (defaults to port 8000):
    ```bash
    zagori-tools
    ```
@@ -21,8 +25,8 @@ A tool server I vibe coded so that I can plug it into ChatGPT, and documented so
    ```bash
    uvicorn zagori_tools.server:app --host 0.0.0.0 --port 8000 --reload
    ```
-3. Open the interactive docs at http://localhost:8000/docs.
-4. The manifest lives at http://localhost:8000/.well-known/ai-plugin.json.
+4. Open the interactive docs at http://localhost:8000/docs.
+5. The manifest lives at http://localhost:8000/.well-known/ai-plugin.json.
 
 ## Testing
 - Install the test extras once: `pip install -e .[test]`
@@ -31,9 +35,9 @@ A tool server I vibe coded so that I can plug it into ChatGPT, and documented so
 ## Wiring into ChatGPT
 - Deploy the server somewhere reachable from ChatGPT (for local testing you can use a tunnelling tool like `cloudflared` or `ngrok`).
 - In the GPT builder, create a new Action and provide the manifest URL (`https://<your-host>/.well-known/ai-plugin.json`).
-- ChatGPT will ingest the OpenAPI schema at `/openapi.json` and can invoke the defined endpoints.
+- ChatGPT submits JSON bodies like `{ "method": "POST", "path": "/v1/pages", "body": { ... } }` and receives the raw Notion response.
 
 ## Next Steps
-- Add authentication once you deploy beyond local experiments.
-- Expand the utility endpoints with the capabilities your GPT needs.
+- Add authentication or IP restrictions before exposing the proxy publicly.
+- Log or restrict the forwarded methods/paths if you need finer-grained control.
 - Replace placeholder contact/legal URLs in the manifest with your own details.
