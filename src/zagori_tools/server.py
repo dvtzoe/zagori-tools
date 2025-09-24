@@ -16,7 +16,7 @@ load_dotenv()
 
 app = FastAPI(
     title="Zagori Tools",
-    version="0.2.0",
+    version="0.2.1",
     description="Tool server that proxies requests to the Notion API for ChatGPT.",
 )
 
