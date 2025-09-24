@@ -74,7 +74,7 @@ async def notion_request(
     path: str,
     params: dict[str, Any] | None = None,
     body: dict[str, Any] | None = None,
-    ctx: Context = None,  # type: ignore[assignment]
+    ctx: Context | None = None,  # type: ignore[assignment]
 ) -> dict[str, Any]:
     """Call the Notion API and return the raw response metadata."""
 
@@ -135,11 +135,27 @@ def main() -> None:
         ],
     )
 
+    certfile = os.getenv("SSL_CERTFILE")
+    keyfile = os.getenv("SSL_KEYFILE")
+    ssl_kwargs: dict[str, Any] = {}
+
+    if certfile and keyfile:
+        ssl_kwargs["ssl_certfile"] = certfile
+        ssl_kwargs["ssl_keyfile"] = keyfile
+        key_password = os.getenv("SSL_KEYFILE_PASSWORD")
+        if key_password:
+            ssl_kwargs["ssl_keyfile_password"] = key_password
+    elif settings.port == 443:
+        raise SystemExit(
+            "PORT is 443 but SSL_CERTFILE/SSL_KEYFILE are not configured; HTTPS requires both."
+        )
+
     uvicorn.run(
         starlette_app,
         host=settings.host,
         port=settings.port,
         log_level=settings.log_level.lower(),
+        **ssl_kwargs,
     )
 
 
