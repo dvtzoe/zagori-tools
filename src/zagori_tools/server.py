@@ -28,14 +28,16 @@ def _get_openapi_document() -> dict[str, Any]:
         raw = OPENAPI_JSON_PATH.read_text(encoding="utf-8")
     except OSError as exc:
         raise HTTPException(
-            status_code=500, detail="openapi.json is missing; unable to serve the schema."
+            status_code=500,
+            detail="openapi.json is missing; unable to serve the schema.",
         ) from exc
 
     try:
         return json.loads(raw)
     except json.JSONDecodeError as exc:
         raise HTTPException(
-            status_code=500, detail="openapi.json is invalid JSON; unable to serve the schema."
+            status_code=500,
+            detail="openapi.json is invalid JSON; unable to serve the schema.",
         ) from exc
 
 
@@ -169,8 +171,6 @@ def proxy_notion_request(payload: NotionProxyRequest) -> NotionProxyResponse:
     )
 
 
-
-
 @app.get("/.well-known/openapi.json", include_in_schema=False)
 async def well_known_openapi() -> JSONResponse:
     """Serve the static OpenAPI document for plugin registration."""
@@ -195,7 +195,7 @@ async def plugin_manifest(request: Request) -> JSONResponse:
         "auth": {"type": "none"},
         "api": {"type": "openapi", "url": f"{base_url}/.well-known/openapi.json"},
         "contact_email": "ohmtzoe@gmail.com",
-        "legal_info_url": "https://github.com/dvtz/zagori-tools/blob/main/README.md",
+        "legal_info_url": "https://github.com/dvtzoe/zagori-tools/blob/main/README.md",
     }
     return JSONResponse(content=manifest)
 

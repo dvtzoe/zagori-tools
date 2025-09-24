@@ -47,3 +47,10 @@ Proxy a Notion integration through a FastAPI server that ChatGPT can call as a s
 - Add authentication or IP restrictions before exposing the proxy publicly.
 - Log or restrict the forwarded methods/paths if you need finer-grained control.
 - Replace placeholder contact/legal URLs in the manifest with your own details.
+
+## MCP Connector
+- Launch the SSE server with `zagori-tools-mcp` (set `FASTMCP_HOST`/`FASTMCP_PORT` as needed).
+- Deploy it on HTTPS and point ChatGPT's connector URL at `https://<your-host>/sse/`.
+- The connector exposes a single tool `notion_request` that mirrors the REST proxy parameters (`method`, `path`, `params`, `body`).
+- Responses include `status_code`, `data`, and `notion_request_id`, matching the Action server behavior.
+
