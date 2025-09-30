@@ -126,7 +126,7 @@ def test_proxy_returns_error_payload_from_notion(monkeypatch: pytest.MonkeyPatch
         json={"method": "GET", "path": "/v1/pages/non-existent"},
     )
     assert response.status_code == 404
-    assert response.json() == error_payload
+    assert response.json() == {"detail": error_payload}
 
 
 def test_proxy_handles_non_json_bodies(monkeypatch: pytest.MonkeyPatch) -> None:

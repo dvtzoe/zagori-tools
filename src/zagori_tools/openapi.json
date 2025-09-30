@@ -7,9 +7,8 @@
   },
   "servers": [
     {
-      "name": "Zagori",
       "url": "https://zagori-tools.crabdance.com",
-      "description": "The main self hosted server"
+      "description": "Production server hosted at crabdance.com"
     }
   ],
   "paths": {
@@ -41,17 +40,17 @@
           "notion"
         ],
         "summary": "Proxy Notion Request",
-        "description": "Forward a request to Notion and return the raw response for ChatGPT to consume.",
+        "description": "Proxy requests to Notion API v2025-09-03. Supports all operations: pages, databases, blocks, search, users. \nHandles authentication, versioning, and error responses automatically. Returns raw API response with metadata.",
         "operationId": "proxy_notion_request_notion_request_post",
         "requestBody": {
-          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/NotionProxyRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "200": {
@@ -81,133 +80,127 @@
   "components": {
     "schemas": {
       "HTTPValidationError": {
-        "title": "HTTPValidationError",
-        "type": "object",
         "properties": {
           "detail": {
-            "title": "Detail",
-            "type": "array",
             "items": {
               "$ref": "#/components/schemas/ValidationError"
-            }
+            },
+            "type": "array",
+            "title": "Detail"
           }
-        }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
       },
       "HealthResponse": {
-        "title": "HealthResponse",
-        "description": "Response payload for the health check endpoint.",
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok",
+            "title": "Status"
+          }
+        },
         "type": "object",
         "required": [
           "status"
         ],
-        "properties": {
-          "status": {
-            "title": "Status",
-            "type": "string",
-            "const": "ok"
-          }
-        }
+        "title": "HealthResponse",
+        "description": "Response payload for the health check endpoint."
       },
       "NotionProxyRequest": {
-        "title": "NotionProxyRequest",
-        "description": "Generic proxy request body for forwarding calls to the Notion API.",
-        "type": "object",
-        "required": [
-          "method",
-          "path"
-        ],
         "properties": {
           "method": {
-            "title": "Method",
             "type": "string",
             "enum": [
               "GET",
               "POST",
               "PATCH",
               "DELETE"
-            ]
+            ],
+            "title": "Method",
+            "description": "HTTP method for the Notion API request. Use GET for retrieval, POST for creation and queries, PATCH for updates, DELETE for removal."
           },
           "path": {
+            "type": "string",
             "title": "Path",
-            "description": "Endpoint path, e.g. '/v1/pages' or 'v1/databases/{database_id}/query'.",
-            "type": "string"
+            "description": "\n        Notion API endpoint path (without the base URL). Examples:\n        - '/v1/pages' (create page)\n        - '/v1/pages/{page_id}' (get/update page)\n        - '/v1/databases/{database_id}' (get database)\n        - '/v1/databases/{database_id}/query' (query database)\n        - '/v1/blocks/{block_id}/children' (get/append block children)\n        - '/v1/search' (search pages and databases)\n        - '/v1/users' (list users)\n        - '/v1/comments' (create comment)\n        \n        Replace {page_id}, {database_id}, etc. with actual UUIDs (with or without hyphens).\n        "
           },
           "params": {
-            "title": "Params",
-            "description": "Optional query parameters appended to the request.",
             "anyOf": [
               {
-                "type": "object",
-                "additionalProperties": true
+                "additionalProperties": true,
+                "type": "object"
               },
               {
-                "type": null
+                "type": "null"
               }
-            ]
+            ],
+            "title": "Params",
+            "description": "\n        Optional query parameters. Common examples:\n        - For pagination: {'start_cursor': 'cursor_value', 'page_size': 100}\n        - For filtering results: {'filter_properties': ['title']}\n        - For archived content: {'filter': {'property': 'object', 'value': 'page'}}\n        "
           },
           "body": {
-            "title": "Body",
-            "description": "Optional JSON body forwarded to Notion (ignored for GET requests).",
             "anyOf": [
               {
-                "type": "object",
-                "additionalProperties": true
+                "additionalProperties": true,
+                "type": "object"
               },
               {
-                "type": null
+                "type": "null"
               }
-            ]
+            ],
+            "title": "Body",
+            "description": "\n        Optional JSON request body (ignored for GET requests). Structure varies by endpoint:\n        \n        For page creation (POST /v1/pages):\n        {\n            \"parent\": {\"database_id\": \"database_uuid\"},\n            \"properties\": {\n                \"title\": {\"title\": [{\"text\": {\"content\": \"Page Title\"}}]},\n                \"status\": {\"select\": {\"name\": \"In Progress\"}}\n            }\n        }\n        \n        For database queries (POST /v1/databases/{database_id}/query):\n        {\n            \"filter\": {\n                \"property\": \"Status\",\n                \"select\": {\"equals\": \"Done\"}\n            },\n            \"sorts\": [{\"property\": \"Created\", \"direction\": \"descending\"}],\n            \"page_size\": 50\n        }\n        \n        For block appending (PATCH /v1/blocks/{block_id}/children):\n        {\n            \"children\": [\n                {\n                    \"paragraph\": {\n                        \"rich_text\": [{\"text\": {\"content\": \"New paragraph text\"}}]\n                    }\n                }\n            ]\n        }\n        \n        For search (POST /v1/search):\n        {\n            \"query\": \"search term\",\n            \"filter\": {\"property\": \"object\", \"value\": \"page\"},\n            \"page_size\": 10\n        }\n        "
           }
-        }
-      },
-      "NotionProxyResponse": {
-        "title": "NotionProxyResponse",
-        "description": "Standardised response surfaced back to ChatGPT.",
+        },
         "type": "object",
         "required": [
-          "status_code",
-          "data"
+          "method",
+          "path"
         ],
+        "title": "NotionProxyRequest",
+        "description": "Generic proxy request body for forwarding calls to the Notion API.\n\nThis tool allows you to make any Notion API call by specifying the HTTP method, \nendpoint path, query parameters, and request body. It supports all core Notion \noperations including pages, databases, blocks, users, and comments.\n\nCommon Notion API patterns:\n- Create a page: POST /v1/pages\n- Query a database: POST /v1/databases/{database_id}/query  \n- Retrieve a page: GET /v1/pages/{page_id}\n- Update page properties: PATCH /v1/pages/{page_id}\n- Append block children: PATCH /v1/blocks/{block_id}/children\n- Search content: POST /v1/search\n\nAuthentication is handled automatically via the NOTION_API_TOKEN environment variable."
+      },
+      "NotionProxyResponse": {
         "properties": {
           "status_code": {
+            "type": "integer",
             "title": "Status Code",
-            "type": "integer"
+            "description": "HTTP status code from Notion API. 200 for success, 400+ for errors."
           },
           "data": {
-            "title": "Data",
             "anyOf": [
               {},
               {
-                "type": null
+                "type": "null"
               }
-            ]
+            ],
+            "title": "Data",
+            "description": "Raw JSON response from Notion API. Structure varies by endpoint. null for non-JSON responses."
           },
           "notion_request_id": {
-            "title": "Notion Request Id",
-            "description": "Value of Notion's X-Request-Id header when available.",
             "anyOf": [
               {
                 "type": "string"
               },
               {
-                "type": null
+                "type": "null"
               }
-            ]
+            ],
+            "title": "Notion Request Id",
+            "description": "Notion's request ID for debugging and support. Include this when reporting issues to Notion."
           }
-        }
-      },
-      "ValidationError": {
-        "title": "ValidationError",
+        },
         "type": "object",
         "required": [
-          "loc",
-          "msg",
-          "type"
+          "status_code",
+          "data"
         ],
+        "title": "NotionProxyResponse",
+        "description": "Standardised response from Notion API calls.\n\nContains the HTTP status code, response data, and Notion's request ID for debugging.\nThe data field contains the raw JSON response from Notion's API, which varies by endpoint.\n\nCommon response structures:\n- Pages: Contains 'id', 'properties', 'parent', 'created_time', etc.\n- Databases: Contains 'id', 'title', 'properties' schema, 'parent', etc.\n- Query results: Contains 'results' array and 'next_cursor' for pagination\n- Errors: Contains 'object': 'error', 'status', 'code', 'message'"
+      },
+      "ValidationError": {
         "properties": {
           "loc": {
-            "title": "Location",
-            "type": "array",
             "items": {
               "anyOf": [
                 {
@@ -217,17 +210,26 @@
                   "type": "integer"
                 }
               ]
-            }
+            },
+            "type": "array",
+            "title": "Location"
           },
           "msg": {
-            "title": "Message",
-            "type": "string"
+            "type": "string",
+            "title": "Message"
           },
           "type": {
-            "title": "Error Type",
-            "type": "string"
+            "type": "string",
+            "title": "Error Type"
           }
-        }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
       }
     }
   }
