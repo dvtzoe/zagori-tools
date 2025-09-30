@@ -34,7 +34,7 @@
           "notion"
         ],
         "summary": "Proxy Notion Request",
-        "description": "Forward a request to Notion and return the raw response for LLM consumption.\n\nThis endpoint acts as a comprehensive proxy to the Notion API, supporting all \nNotion operations through a single interface. It automatically handles:\n- Authentication via Bearer token\n- API versioning (currently 2024-05-01)\n- Request/response format conversion\n- Error handling and status code propagation\n\nUse this to perform any Notion operation including:\n- Managing pages, databases, and blocks\n- Querying and filtering content  \n- Creating and updating properties\n- Searching across workspaces\n- Managing users and permissions\n\nThe response includes the raw Notion API response plus metadata for debugging.",
+        "description": "Proxy requests to Notion API v2024-05-01. Supports all operations: pages, databases, blocks, search, users. \nHandles authentication, versioning, and error responses automatically. Returns raw API response with metadata.",
         "operationId": "proxy_notion_request_notion_request_post",
         "requestBody": {
           "content": {

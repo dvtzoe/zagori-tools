@@ -235,23 +235,8 @@ def health_check() -> HealthResponse:
 @app.post("/notion/request", response_model=NotionProxyResponse, tags=["notion"])
 def proxy_notion_request(payload: NotionProxyRequest) -> NotionProxyResponse:
     """
-    Forward a request to Notion and return the raw response for LLM consumption.
-    
-    This endpoint acts as a comprehensive proxy to the Notion API, supporting all 
-    Notion operations through a single interface. It automatically handles:
-    - Authentication via Bearer token
-    - API versioning (currently 2024-05-01)
-    - Request/response format conversion
-    - Error handling and status code propagation
-    
-    Use this to perform any Notion operation including:
-    - Managing pages, databases, and blocks
-    - Querying and filtering content  
-    - Creating and updating properties
-    - Searching across workspaces
-    - Managing users and permissions
-    
-    The response includes the raw Notion API response plus metadata for debugging.
+    Proxy requests to Notion API v2024-05-01. Supports all operations: pages, databases, blocks, search, users. 
+    Handles authentication, versioning, and error responses automatically. Returns raw API response with metadata.
     """
 
     token = _get_notion_token()
