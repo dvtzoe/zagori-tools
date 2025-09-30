@@ -11,3 +11,4 @@ wheels/
 
 # Environment variables file
 .env
+.webui_secret_key
