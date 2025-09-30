@@ -45,6 +45,12 @@ app = FastAPI(
     title="Zagori Tools",
     version="0.2.2",
     description="Tool server that proxies requests to the Notion API for ChatGPT.",
+    servers=[
+        {
+            "url": "https://zagori-tools.crabdance.com",
+            "description": "Production server hosted at crabdance.com"
+        }
+    ]
 )
 
 # Allow the GPT callers to reach the service from any origin during development.
@@ -196,7 +202,7 @@ class NotionProxyResponse(BaseModel):
 
 
 NOTION_API_BASE_URL = "https://api.notion.com"
-DEFAULT_NOTION_VERSION = "2024-05-01"
+DEFAULT_NOTION_VERSION = "2025-09-03"
 
 
 def _get_notion_token() -> str:
@@ -235,7 +241,7 @@ def health_check() -> HealthResponse:
 @app.post("/notion/request", response_model=NotionProxyResponse, tags=["notion"])
 def proxy_notion_request(payload: NotionProxyRequest) -> NotionProxyResponse:
     """
-    Proxy requests to Notion API v2024-05-01. Supports all operations: pages, databases, blocks, search, users. 
+    Proxy requests to Notion API v2025-09-03. Supports all operations: pages, databases, blocks, search, users. 
     Handles authentication, versioning, and error responses automatically. Returns raw API response with metadata.
     """
 
@@ -286,7 +292,7 @@ async def plugin_manifest(request: Request) -> JSONResponse:
         "name_for_model": "zagori_tools_notion",
         "description_for_human": "Access and manage Notion workspaces through the complete Notion API. Create, read, update pages, databases, and blocks.",
         "description_for_model": (
-            "Use this tool to interact with Notion workspaces via the latest Notion API (2024-05-01). "
+            "Use this tool to interact with Notion workspaces via the latest Notion API (2025-09-03). "
             "Supports all Notion operations: create/edit pages and databases, query data with filters and sorts, "
             "manage blocks and rich text content, search across workspaces, and handle user permissions. "
             "Specify HTTP method, API path, query params, and JSON body as needed. "

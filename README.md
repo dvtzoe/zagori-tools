@@ -1,6 +1,6 @@
 # Zagori Tools
 
-Proxy a Notion integration through a FastAPI server that ChatGPT and other LLMs can call as a single Action. This tool provides comprehensive access to the Notion API v2024-05-01 with enhanced guidance for AI assistants.
+Proxy a Notion integration through a FastAPI server that ChatGPT and other LLMs can call as a single Action. This tool provides comprehensive access to the Notion API v2025-09-03 with enhanced guidance for AI assistants.
 
 ## Features
 - `GET /healthz` – readiness probe for deployment checks.
@@ -203,13 +203,13 @@ The tool returns Notion's error responses directly. Common error patterns:
 6. **Include request IDs**: Use `notion_request_id` for debugging issues
 
 ### API Version
-This tool uses Notion API version `2024-05-01`, the latest stable version.
+This tool uses Notion API version `2025-09-03`, the latest stable version.
 
 ## Getting Started
 1. Provide your Notion integration token via environment variable or a `.env` file (auto-loaded on startup):
    ```bash
    echo 'NOTION_API_TOKEN=secret_token_from_notion' > .env
-   echo 'NOTION_API_VERSION=2024-05-01' >> .env  # optional override (defaults to latest)
+   echo 'NOTION_API_VERSION=2025-09-03' >> .env  # optional override (defaults to latest)
    ```
 2. Point the server at your TLS certificate and key so it can listen on HTTPS 443:
    ```bash

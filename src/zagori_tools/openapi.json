@@ -5,6 +5,12 @@
     "description": "Tool server that proxies requests to the Notion API for ChatGPT.",
     "version": "0.2.2"
   },
+  "servers": [
+    {
+      "url": "https://zagori-tools.crabdance.com",
+      "description": "Production server hosted at crabdance.com"
+    }
+  ],
   "paths": {
     "/healthz": {
       "get": {
@@ -34,7 +40,7 @@
           "notion"
         ],
         "summary": "Proxy Notion Request",
-        "description": "Proxy requests to Notion API v2024-05-01. Supports all operations: pages, databases, blocks, search, users. \nHandles authentication, versioning, and error responses automatically. Returns raw API response with metadata.",
+        "description": "Proxy requests to Notion API v2025-09-03. Supports all operations: pages, databases, blocks, search, users. \nHandles authentication, versioning, and error responses automatically. Returns raw API response with metadata.",
         "operationId": "proxy_notion_request_notion_request_post",
         "requestBody": {
           "content": {

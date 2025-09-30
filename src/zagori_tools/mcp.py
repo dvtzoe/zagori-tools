@@ -68,7 +68,7 @@ async def _send_notion_request(
     return response.status_code, data, notion_request_id
 
 
-@mcp_server.tool(name="notion_request", description="Comprehensive proxy for Notion API calls with latest API version (2024-05-01). Supports all Notion operations: pages, databases, blocks, search, users, and comments.")
+@mcp_server.tool(name="notion_request", description="Comprehensive proxy for Notion API calls with latest API version (2025-09-03). Supports all Notion operations: pages, databases, blocks, search, users, and comments.")
 async def notion_request(
     method: Literal["GET", "POST", "PATCH", "DELETE"],
     path: str,
@@ -79,7 +79,7 @@ async def notion_request(
     """
     Call the Notion API and return the raw response metadata.
     
-    This tool provides complete access to Notion's API with the latest version (2024-05-01).
+    This tool provides complete access to Notion's API with the latest version (2025-09-03).
     It handles authentication, versioning, and error handling automatically.
     
     Args:
