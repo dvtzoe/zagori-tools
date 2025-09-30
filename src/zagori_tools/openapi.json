@@ -5,6 +5,13 @@
     "description": "Tool server that proxies requests to the Notion API for ChatGPT.",
     "version": "0.2.2"
   },
+  "servers": [
+    {
+      "name": "Zagori",
+      "url": "https://zagori-tools.crabdance.com",
+      "description": "The main self hosted server"
+    }
+  ],
   "paths": {
     "/healthz": {
       "get": {
