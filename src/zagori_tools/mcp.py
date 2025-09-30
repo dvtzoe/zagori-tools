@@ -68,7 +68,7 @@ async def _send_notion_request(
     return response.status_code, data, notion_request_id
 
 
-@mcp_server.tool(name="notion_request", description="Proxy an arbitrary Notion API call.")
+@mcp_server.tool(name="notion_request", description="Comprehensive proxy for Notion API calls with latest API version (2024-05-01). Supports all Notion operations: pages, databases, blocks, search, users, and comments.")
 async def notion_request(
     method: Literal["GET", "POST", "PATCH", "DELETE"],
     path: str,
@@ -76,7 +76,28 @@ async def notion_request(
     body: dict[str, Any] | None = None,
     ctx: Context | None = None,  # type: ignore[assignment]
 ) -> dict[str, Any]:
-    """Call the Notion API and return the raw response metadata."""
+    """
+    Call the Notion API and return the raw response metadata.
+    
+    This tool provides complete access to Notion's API with the latest version (2024-05-01).
+    It handles authentication, versioning, and error handling automatically.
+    
+    Args:
+        method: HTTP method (GET, POST, PATCH, DELETE)
+        path: API endpoint path (e.g., '/v1/pages', '/v1/databases/{id}/query')
+        params: Optional query parameters for pagination, filtering, etc.
+        body: Optional JSON body for POST/PATCH requests
+        
+    Returns:
+        Dict containing status_code, data (raw API response), and notion_request_id
+        
+    Examples:
+        - Get page: GET /v1/pages/{page_id}
+        - Query database: POST /v1/databases/{db_id}/query with filter/sort body
+        - Create page: POST /v1/pages with parent and properties body
+        - Update page: PATCH /v1/pages/{page_id} with properties body
+        - Search: POST /v1/search with query body
+    """
 
     try:
         status_code, data, notion_request_id = await _send_notion_request(

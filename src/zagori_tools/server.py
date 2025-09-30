@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 load_dotenv()
 
@@ -63,22 +63,99 @@ class HealthResponse(BaseModel):
 
 
 class NotionProxyRequest(BaseModel):
-    """Generic proxy request body for forwarding calls to the Notion API."""
+    """
+    Generic proxy request body for forwarding calls to the Notion API.
+    
+    This tool allows you to make any Notion API call by specifying the HTTP method, 
+    endpoint path, query parameters, and request body. It supports all core Notion 
+    operations including pages, databases, blocks, users, and comments.
+    
+    Common Notion API patterns:
+    - Create a page: POST /v1/pages
+    - Query a database: POST /v1/databases/{database_id}/query  
+    - Retrieve a page: GET /v1/pages/{page_id}
+    - Update page properties: PATCH /v1/pages/{page_id}
+    - Append block children: PATCH /v1/blocks/{block_id}/children
+    - Search content: POST /v1/search
+    
+    Authentication is handled automatically via the NOTION_API_TOKEN environment variable.
+    """
 
-    method: Literal["GET", "POST", "PATCH", "DELETE"]
+    method: Literal["GET", "POST", "PATCH", "DELETE"] = Field(
+        ...,
+        description="HTTP method for the Notion API request. Use GET for retrieval, POST for creation and queries, PATCH for updates, DELETE for removal."
+    )
     path: str = Field(
         ...,
-        description="Endpoint path, e.g. '/v1/pages' or 'v1/databases/{database_id}/query'.",
+        description="""
+        Notion API endpoint path (without the base URL). Examples:
+        - '/v1/pages' (create page)
+        - '/v1/pages/{page_id}' (get/update page)
+        - '/v1/databases/{database_id}' (get database)
+        - '/v1/databases/{database_id}/query' (query database)
+        - '/v1/blocks/{block_id}/children' (get/append block children)
+        - '/v1/search' (search pages and databases)
+        - '/v1/users' (list users)
+        - '/v1/comments' (create comment)
+        
+        Replace {page_id}, {database_id}, etc. with actual UUIDs (with or without hyphens).
+        """,
     )
     params: dict[str, Any] | None = Field(
-        default=None, description="Optional query parameters appended to the request."
+        default=None, 
+        description="""
+        Optional query parameters. Common examples:
+        - For pagination: {'start_cursor': 'cursor_value', 'page_size': 100}
+        - For filtering results: {'filter_properties': ['title']}
+        - For archived content: {'filter': {'property': 'object', 'value': 'page'}}
+        """
     )
     body: dict[str, Any] | None = Field(
         default=None,
-        description="Optional JSON body forwarded to Notion (ignored for GET requests).",
+        description="""
+        Optional JSON request body (ignored for GET requests). Structure varies by endpoint:
+        
+        For page creation (POST /v1/pages):
+        {
+            "parent": {"database_id": "database_uuid"},
+            "properties": {
+                "title": {"title": [{"text": {"content": "Page Title"}}]},
+                "status": {"select": {"name": "In Progress"}}
+            }
+        }
+        
+        For database queries (POST /v1/databases/{database_id}/query):
+        {
+            "filter": {
+                "property": "Status",
+                "select": {"equals": "Done"}
+            },
+            "sorts": [{"property": "Created", "direction": "descending"}],
+            "page_size": 50
+        }
+        
+        For block appending (PATCH /v1/blocks/{block_id}/children):
+        {
+            "children": [
+                {
+                    "paragraph": {
+                        "rich_text": [{"text": {"content": "New paragraph text"}}]
+                    }
+                }
+            ]
+        }
+        
+        For search (POST /v1/search):
+        {
+            "query": "search term",
+            "filter": {"property": "object", "value": "page"},
+            "page_size": 10
+        }
+        """
     )
 
-    @validator("path")
+    @field_validator("path")
+    @classmethod
     def normalise_path(cls, value: str) -> str:
         """Ensure the path sent to the Notion API begins with a slash."""
 
@@ -91,18 +168,35 @@ class NotionProxyRequest(BaseModel):
 
 
 class NotionProxyResponse(BaseModel):
-    """Standardised response surfaced back to ChatGPT."""
+    """
+    Standardised response from Notion API calls.
+    
+    Contains the HTTP status code, response data, and Notion's request ID for debugging.
+    The data field contains the raw JSON response from Notion's API, which varies by endpoint.
+    
+    Common response structures:
+    - Pages: Contains 'id', 'properties', 'parent', 'created_time', etc.
+    - Databases: Contains 'id', 'title', 'properties' schema, 'parent', etc.
+    - Query results: Contains 'results' array and 'next_cursor' for pagination
+    - Errors: Contains 'object': 'error', 'status', 'code', 'message'
+    """
 
-    status_code: int
-    data: Any | None
+    status_code: int = Field(
+        ...,
+        description="HTTP status code from Notion API. 200 for success, 400+ for errors."
+    )
+    data: Any | None = Field(
+        ...,
+        description="Raw JSON response from Notion API. Structure varies by endpoint. null for non-JSON responses."
+    )
     notion_request_id: str | None = Field(
         default=None,
-        description="Value of Notion's X-Request-Id header when available.",
+        description="Notion's request ID for debugging and support. Include this when reporting issues to Notion.",
     )
 
 
 NOTION_API_BASE_URL = "https://api.notion.com"
-DEFAULT_NOTION_VERSION = "2022-06-28"
+DEFAULT_NOTION_VERSION = "2024-05-01"
 
 
 def _get_notion_token() -> str:
@@ -140,7 +234,25 @@ def health_check() -> HealthResponse:
 
 @app.post("/notion/request", response_model=NotionProxyResponse, tags=["notion"])
 def proxy_notion_request(payload: NotionProxyRequest) -> NotionProxyResponse:
-    """Forward a request to Notion and return the raw response for ChatGPT to consume."""
+    """
+    Forward a request to Notion and return the raw response for LLM consumption.
+    
+    This endpoint acts as a comprehensive proxy to the Notion API, supporting all 
+    Notion operations through a single interface. It automatically handles:
+    - Authentication via Bearer token
+    - API versioning (currently 2024-05-01)
+    - Request/response format conversion
+    - Error handling and status code propagation
+    
+    Use this to perform any Notion operation including:
+    - Managing pages, databases, and blocks
+    - Querying and filtering content  
+    - Creating and updating properties
+    - Searching across workspaces
+    - Managing users and permissions
+    
+    The response includes the raw Notion API response plus metadata for debugging.
+    """
 
     token = _get_notion_token()
     with _build_notion_client(token) as client:
@@ -187,10 +299,13 @@ async def plugin_manifest(request: Request) -> JSONResponse:
         "schema_version": "v1",
         "name_for_human": "Zagori Tools",
         "name_for_model": "zagori_tools_notion",
-        "description_for_human": "Proxy every Notion API endpoint through a single action.",
+        "description_for_human": "Access and manage Notion workspaces through the complete Notion API. Create, read, update pages, databases, and blocks.",
         "description_for_model": (
-            "Use this tool to perform any Notion API call by specifying the HTTP method, path,"
-            " query params, and body."
+            "Use this tool to interact with Notion workspaces via the latest Notion API (2024-05-01). "
+            "Supports all Notion operations: create/edit pages and databases, query data with filters and sorts, "
+            "manage blocks and rich text content, search across workspaces, and handle user permissions. "
+            "Specify HTTP method, API path, query params, and JSON body as needed. "
+            "Authentication is handled automatically. Returns raw Notion API responses with status codes."
         ),
         "auth": {"type": "none"},
         "api": {"type": "openapi", "url": f"{base_url}/.well-known/openapi.json"},
